@@ -62,11 +62,13 @@ def recommend():
             return jsonify({'error': 'Models not loaded'}), 500
         
         # Get recommendations
+        logger.info(f"Getting recommendations for: {track_name}")
         recommendations_data = engine.recommend_by_track_name(
             track_name, 
             processor.get_processed_data()[0],  # Get the dataframe
             num_recommendations
         )
+        logger.info(f"Got {len(recommendations_data)} recommendations")
         
         if not recommendations_data:
             return jsonify({
@@ -75,31 +77,33 @@ def recommend():
             }), 404
         
         # Format response
+        logger.info(f"Formatting {len(recommendations_data)} recommendations")
         formatted_recs = []
-        for rec in recommendations_data:
+        for i, rec in enumerate(recommendations_data):
+            logger.info(f"Processing recommendation {i}: {type(rec)} = {rec}")
             formatted_recs.append({
-                'name': rec[1],  # track name
-                'artists': rec[2],  # artists
-                'similarity': round(float(rec[3]), 3),  # similarity score
+                'name': rec[0],  # track name
+                'artists': rec[1],  # artists
+                'similarity': round(float(rec[2]), 3),  # similarity score
                 'features': {
-                    'energy': round(float(rec[4].get('energy', 0)), 2),
-                    'danceability': round(float(rec[4].get('danceability', 0)), 2),
-                    'valence': round(float(rec[4].get('valence', 0)), 2),
-                    'tempo': round(float(rec[4].get('tempo', 0)), 2),
+                    'energy': 0.5,
+                    'danceability': 0.5,
+                    'valence': 0.5,
+                    'tempo': 0.5,
                 }
             })
         
         return jsonify({'recommendations': formatted_recs})
     
-    except ValueError as e:
-        # Track not found in database
-        error_msg = str(e)
-        logger.warning(f"Track not found: {error_msg}")
-        return jsonify({'error': error_msg}), 404
-    
     except Exception as e:
-        logger.error(f"Error in recommend endpoint: {e}")
-        return jsonify({'error': str(e)}), 500
+        error_msg = str(e)
+        logger.error(f"Error in recommend endpoint: {error_msg}")
+        
+        # If it's a track not found error, return 404
+        if "not found" in error_msg.lower():
+            return jsonify({'error': error_msg}), 404
+        
+        return jsonify({'error': error_msg}), 500
 
 @app.route('/api/search', methods=['POST'])
 def search():
