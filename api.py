@@ -91,6 +91,12 @@ def recommend():
         
         return jsonify({'recommendations': formatted_recs})
     
+    except ValueError as e:
+        # Track not found in database
+        error_msg = str(e)
+        logger.warning(f"Track not found: {error_msg}")
+        return jsonify({'error': error_msg}), 404
+    
     except Exception as e:
         logger.error(f"Error in recommend endpoint: {e}")
         return jsonify({'error': str(e)}), 500
