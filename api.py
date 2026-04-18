@@ -148,15 +148,17 @@ def stats():
         logger.error(f"Error in stats endpoint: {e}")
         return jsonify({'error': str(e)}), 500
 
+# Attempt to load models at module import time
+# This is necessary for gunicorn to have models ready
+try:
+    logger.info("⏳ Loading models at startup...")
+    load_models()
+except Exception as e:
+    logger.error(f"⚠️ Models will be loaded on first request: {e}")
+
 if __name__ == '__main__':
-    logger.info("Starting Music Recommendation API...")
-    
-    # Load models
-    if load_models():
-        port = int(os.environ.get('PORT', 5000))
-        logger.info(f"🎵 API ready at http://0.0.0.0:{port}")
-        logger.info(f"Test: POST http://0.0.0.0:{port}/api/recommend")
-        logger.info("With body: {\"trackName\": \"Shape of You\", \"recommendations\": 5}")
-        app.run(debug=False, host='0.0.0.0', port=port)
-    else:
-        logger.error("Failed to load models. Check your dataset path.")
+    port = int(os.environ.get('PORT', 5000))
+    logger.info(f"🎵 API ready at http://0.0.0.0:{port}")
+    logger.info(f"Test: POST http://0.0.0.0:{port}/api/recommend")
+    logger.info("With body: {\"trackName\": \"Shape of You\", \"recommendations\": 5}")
+    app.run(debug=False, host='0.0.0.0', port=port)
